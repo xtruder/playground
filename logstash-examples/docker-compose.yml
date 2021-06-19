@@ -1,0 +1,34 @@
+version: "3.2"
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: password
+    volumes:
+      - ./initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
+
+  stdin-to-stdout:
+    build:
+      context: ./logstash
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./stdin-to-stdout.conf:/usr/share/logstash/pipeline/logstash.conf
+
+  postgresql-to-stdout:
+    build:
+      context: ./logstash
+    volumes:
+      - ./postgresql-to-stdout.conf:/usr/share/logstash/pipeline/logstash.conf
+    depends_on:
+      - postgres
+
+  postgresql-to-s3:
+    build:
+      context: ./logstash
+    volumes:
+      - ./postgresql-to-s3.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./logstash.yml:/usr/share/logstash/config/logstash.yml
+    depends_on:
+      - postgres

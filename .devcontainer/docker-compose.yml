@@ -1,0 +1,45 @@
+version: '3'
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USER_UID: ${USER_UID:-1000}
+        USER_GID: ${USER_GID:-1000}
+        PROJECT_DIR: /workspace
+    environment:
+      PATH: /home/user/.nix-profile/bin:/home/user/.local/bin:/usr/local/bin:/usr/bin:/bin
+      DOCKER_HOST: tcp://localhost:2375
+    command: sleep infinity
+    volumes:
+      - ..:/workspace:cached
+      - nix:/nix
+      - direnv-allow:/home/user/.config/direnv/allow
+    security_opt:
+      - label:disable
+    network_mode: "service:netns"
+
+  docker:
+    image: xtruder/dind-rootless:latest
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+      DOCKER_DRIVER: fuse-overlayfs
+    volumes:
+      - ..:/workspace:cached
+      - docker:/var/lib/docker
+    privileged: yes
+    security_opt:
+      - label:disable
+    network_mode: "service:netns"
+
+  # empty container for network namespace
+  netns:
+    image: busybox
+    command: sleep infinity
+    network_mode: "bridge"
+
+volumes:
+  nix:
+  direnv-allow:
+  docker:
